@@ -1,16 +1,15 @@
 package java_external.db.dto;
 
-/**
- * Created by olga on 13.05.18.
- */
+
+
+
 public class Shelf {
 
     private int id;
-    private int name;
+    private String name;
     private Section section;
 
-    public Shelf(int id, int name, Section section) {
-        this.id = id;
+    public Shelf(String name, Section section) {
         this.name = name;
         this.section = section;
     }
@@ -23,11 +22,11 @@ public class Shelf {
         this.id = id;
     }
 
-    public int getName() {
+    public String getName() {
         return name;
     }
 
-    public void setName(int name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -37,5 +36,23 @@ public class Shelf {
 
     public void setSection(Section section) {
         this.section = section;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Shelf shelf = (Shelf) o;
+
+        if (getName() != null ? !getName().equals(shelf.getName()) : shelf.getName() != null) return false;
+        return getSection() != null ? getSection().equals(shelf.getSection()) : shelf.getSection() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getName() != null ? getName().hashCode() : 0;
+        result = 31 * result + (getSection() != null ? getSection().hashCode() : 0);
+        return result;
     }
 }

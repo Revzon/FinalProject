@@ -1,15 +1,14 @@
 package java_external.db.dto;
 
-/**
- * Created by olga on 14.05.18.
- */
+
+
+
 public class Genre {
     private int id;
     private String name;
 
-    public Genre(int id, String name) {
-        this.id = id;
-        this.name = name;
+    public Genre(String name) {
+       this.name = name;
     }
 
     public int getId() {
@@ -26,5 +25,20 @@ public class Genre {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Genre genre = (Genre) o;
+
+        return getName() != null ? getName().equals(genre.getName()) : genre.getName() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return getName() != null ? getName().hashCode() : 0;
     }
 }

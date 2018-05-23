@@ -2,17 +2,15 @@ package java_external.db.dto;
 
 import java.util.Collection;
 
-/**
- * Created by olga on 12.05.18.
- */
+
+
+
 public class Publishment {
 
     private int id;
     private String name;
-    private Collection<Book> books;
 
-    public Publishment(int id, String name) {
-        this.id = id;
+    public Publishment(String name) {
         this.name = name;
     }
 
@@ -32,11 +30,18 @@ public class Publishment {
         this.name = name;
     }
 
-    public Collection<Book> getBooks() {
-        return books;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Publishment that = (Publishment) o;
+
+        return getName() != null ? getName().equals(that.getName()) : that.getName() == null;
     }
 
-    public void setBooks(Collection<Book> books) {
-        this.books = books;
+    @Override
+    public int hashCode() {
+        return getName() != null ? getName().hashCode() : 0;
     }
 }

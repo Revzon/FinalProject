@@ -2,23 +2,19 @@ package java_external.db.dto;
 
 import java_external.enums.Role;
 
-import java.util.Date;
+import java.io.Serializable;
 
-/**
- * Created by olga on 12.05.18.
- */
-public class User {
+public class User implements Serializable {
 
     private int id;
     private String firstName;
     private String secondName;
-    private String patronimycName;
+    private String patronymicName;
     private String login;
     private String email;
     private String phone;
     private String password;
     private Role role;
-    private Date birthDate;
 
     public int getId() {
         return id;
@@ -28,12 +24,12 @@ public class User {
         this.id = id;
     }
 
-    public String getPatronimycName() {
-        return patronimycName;
+    public String getPatronymicName() {
+        return patronymicName;
     }
 
-    public void setPatronimycName(String patronimycName) {
-        this.patronimycName = patronimycName;
+    public void setPatronymicName(String patronymicName) {
+        this.patronymicName = patronymicName;
     }
 
     public String getLogin() {
@@ -92,12 +88,37 @@ public class User {
         this.role = role;
     }
 
-    public Date getBirthDate() {
-        return birthDate;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        User user = (User) o;
+
+        if (getFirstName() != null ? !getFirstName().equals(user.getFirstName()) : user.getFirstName() != null)
+            return false;
+        if (getSecondName() != null ? !getSecondName().equals(user.getSecondName()) : user.getSecondName() != null)
+            return false;
+        if (getPatronymicName() != null ? !getPatronymicName().equals(user.getPatronymicName()) : user.getPatronymicName() != null)
+            return false;
+        if (getLogin() != null ? !getLogin().equals(user.getLogin()) : user.getLogin() != null) return false;
+        if (getEmail() != null ? !getEmail().equals(user.getEmail()) : user.getEmail() != null) return false;
+        if (getPhone() != null ? !getPhone().equals(user.getPhone()) : user.getPhone() != null) return false;
+        if (getPassword() != null ? !getPassword().equals(user.getPassword()) : user.getPassword() != null)
+            return false;
+        return getRole() == user.getRole();
     }
 
-    public void setBirthDate(Date birthDate) {
-        this.birthDate = birthDate;
+    @Override
+    public int hashCode() {
+        int result = getFirstName() != null ? getFirstName().hashCode() : 0;
+        result = 31 * result + (getSecondName() != null ? getSecondName().hashCode() : 0);
+        result = 31 * result + (getPatronymicName() != null ? getPatronymicName().hashCode() : 0);
+        result = 31 * result + (getLogin() != null ? getLogin().hashCode() : 0);
+        result = 31 * result + (getEmail() != null ? getEmail().hashCode() : 0);
+        result = 31 * result + (getPhone() != null ? getPhone().hashCode() : 0);
+        result = 31 * result + (getPassword() != null ? getPassword().hashCode() : 0);
+        result = 31 * result + (getRole() != null ? getRole().hashCode() : 0);
+        return result;
     }
-
 }

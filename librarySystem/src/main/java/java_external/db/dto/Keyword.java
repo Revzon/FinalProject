@@ -1,22 +1,19 @@
 package java_external.db.dto;
 
+public class Keyword {
 
-
-
-public class Section {
-
-    private int id;
+    private Integer id;
     private String name;
 
-    public Section(String name) {
+    public Keyword(String name) {
         this.name = name;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -33,9 +30,9 @@ public class Section {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Section section = (Section) o;
+        Keyword keyword = (Keyword) o;
 
-        return getName() != null ? getName().equals(section.getName()) : section.getName() == null;
+        return getName() != null ? getName().equals(keyword.getName()) : keyword.getName() == null;
     }
 
     @Override

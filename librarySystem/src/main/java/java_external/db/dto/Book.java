@@ -1,45 +1,38 @@
 package java_external.db.dto;
 
-import java.util.Date;
+import java.sql.Date;
 import java.util.List;
 
-/**
- * Created by olga on 12.05.18.
- */
 public class Book {
 
     private String title;
     private int id;
-//    private Publishment publishment;
+    private Publishment publishment;
     private List<Author> authors;
-    private List<KeyWord> keyWords;
+    private List<Keyword> keywords;
 
-//    private Genre genre;
+    private Genre genre;
 
-    //    private Date yearOfPublishing;
-    private boolean aviable;
+    private boolean avilable;
     private Shelf location;
     private User reader;
     private Date dateOfReturn;
-//    private int deposit;
-//    private boolean readingRoomOnly;
 
-    public List<KeyWord> getKeyWords() {
-        return keyWords;
+    public List<Keyword> getKeywords() {
+        return keywords;
     }
 
-    public void setKeyWords(List<KeyWord> keyWords) {
-        this.keyWords = keyWords;
+    public void setKeywords(List<Keyword> keywords) {
+        this.keywords = keywords;
     }
 
+    public Genre getGenre() {
+        return genre;
+    }
 
-//    public Genre getGenre() {
-//        return genre;
-//    }
-//
-//    public void setGenre(Genre genre) {
-//        this.genre = genre;
-//    }
+    public void setGenre(Genre genre) {
+        this.genre = genre;
+    }
 
 
     public String getTitle() {
@@ -50,20 +43,20 @@ public class Book {
         this.title = title;
     }
 
-//    public Publishment getPublishment() {
-//        return publishment;
-//    }
-//
-//    public void setPublishment(Publishment publishment) {
-//        this.publishment = publishment;
-//    }
-
-    public boolean isAviable() {
-        return aviable;
+    public Publishment getPublishment() {
+        return publishment;
     }
 
-    public void setAviable(boolean aviable) {
-        this.aviable = aviable;
+    public void setPublishment(Publishment publishment) {
+        this.publishment = publishment;
+    }
+
+    public boolean isAvilable() {
+        return avilable;
+    }
+
+    public void setAvilable(boolean avilable) {
+        this.avilable = avilable;
     }
 
     public Shelf getLocation() {
@@ -104,5 +97,37 @@ public class Book {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Book)) return false;
+
+        Book book = (Book) o;
+
+        if (isAvilable() != book.isAvilable()) return false;
+        if (getTitle() != null ? !getTitle().equals(book.getTitle()) : book.getTitle() != null) return false;
+        if (getPublishment() != null ? !getPublishment().equals(book.getPublishment()) : book.getPublishment() != null)
+            return false;
+        if (getAuthors() != null ? !getAuthors().equals(book.getAuthors()) : book.getAuthors() != null) return false;
+        if (getGenre() != null ? !getGenre().equals(book.getGenre()) : book.getGenre() != null) return false;
+        if (getLocation() != null ? !getLocation().equals(book.getLocation()) : book.getLocation() != null)
+            return false;
+        if (getReader() != null ? !getReader().equals(book.getReader()) : book.getReader() != null) return false;
+        return getDateOfReturn() != null ? getDateOfReturn().equals(book.getDateOfReturn()) : book.getDateOfReturn() == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getTitle() != null ? getTitle().hashCode() : 0;
+        result = 31 * result + (getPublishment() != null ? getPublishment().hashCode() : 0);
+        result = 31 * result + (getAuthors() != null ? getAuthors().hashCode() : 0);
+        result = 31 * result + (getGenre() != null ? getGenre().hashCode() : 0);
+        result = 31 * result + (isAvilable() ? 1 : 0);
+        result = 31 * result + (getLocation() != null ? getLocation().hashCode() : 0);
+        result = 31 * result + (getReader() != null ? getReader().hashCode() : 0);
+        result = 31 * result + (getDateOfReturn() != null ? getDateOfReturn().hashCode() : 0);
+        return result;
     }
 }
