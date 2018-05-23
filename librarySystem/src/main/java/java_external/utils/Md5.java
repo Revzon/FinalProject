@@ -1,4 +1,4 @@
-package java_external.services.utils;
+package java_external.utils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
