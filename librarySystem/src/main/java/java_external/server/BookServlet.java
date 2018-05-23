@@ -7,32 +7,27 @@ import java_external.services.manager.ConfigurationManager;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
-@WebServlet(name = "BookServlet", urlPatterns = {"/"})
 public class BookServlet extends HttpServlet {
 
     private  static CommandManager commandManager = CommandManager.getInstance();
     private String page = ConfigurationManager.getInstance().getProperty(ConfigurationManager.INDEX_PAGE_PATH);
 
     public void init(ServletConfig config) throws ServletException {
-//        ServletContext sc = config.getServletContext();
         super.init(config);
     }
 
+    public BookServlet() {
+        super();
+    }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-//        HttpSession session = request.getSession();
-//        if (session.isNew()) {
-//            session.setAttribute("session_commands", null);
-//        }
 
         Command command = commandManager.getCommand(request);
 
@@ -45,7 +40,6 @@ public class BookServlet extends HttpServlet {
             dispatcher.forward(request, response);
         } catch (ServletException e) {
             e.printStackTrace();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,3 +60,4 @@ public class BookServlet extends HttpServlet {
     }
 
 }
+
