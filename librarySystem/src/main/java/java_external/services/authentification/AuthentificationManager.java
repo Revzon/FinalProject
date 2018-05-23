@@ -2,13 +2,14 @@ package java_external.services.authentification;
 
 import java_external.db.dao.UserDAO;
 import java_external.db.dto.User;
-import java_external.services.utils.Md5;
+import java_external.utils.Md5;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
 
-/**
- * Created by olga on 13.05.18.
- */
+
+
+
 public class AuthentificationManager {
 
     private static AuthentificationManager instance;
@@ -26,17 +27,23 @@ public class AuthentificationManager {
         this.userDAO = UserDAO.getInstance();
     }
 
-    public User checkUser(String userName, String insertedPassword) {
+    public User checkUser(String userName, String insertedPassword, HttpServletRequest request) {
         User user = getUserByLogin(userName);
+        String ATTR_NAME_ERROR_MESSAGE = "errorMessage";
         if (Objects.isNull(user)) {
+            request.setAttribute(ATTR_NAME_ERROR_MESSAGE, "No user found");
             return user;
         }
         String savedPassword = user.getPassword();
-        if (insertedPassword == Md5.md5Password(savedPassword)) {
-            return user;
+
+        if (savedPassword.equals(Md5.md5Password(insertedPassword))) {
+//            if (savedPassword.equals(insertedPassword)) {
+                return user;
         } else {
+            request.setAttribute(ATTR_NAME_ERROR_MESSAGE, "Wrong password");
             return null;
         }
+
     }
 
     public User getUserByLogin(String userName){
@@ -55,24 +62,26 @@ public class AuthentificationManager {
         return user;
     }
 
-    public boolean checkUserIsNew(String username, String email, String phone) {
-        if (!Objects.isNull(getUserByLogin(username))) {
-            return false;
+    public String checkUserIsNew(String username, String email, String phone) {
+        String errorMessage = "";
+
+        if (!Objects.nonNull(getUserByLogin(username))) {
+            errorMessage = "Username already exists!";
             // add info error
         }
 
 
-        if (!Objects.isNull(getUserByEmail(email))) {
-            return false;
+        if (!Objects.nonNull(getUserByEmail(email))) {
+            errorMessage = "Email already exists!";
             // add info error
         }
 
 
-        if (!Objects.isNull(getUserByPhone(phone))) {
-            return false;
+        if (!Objects.nonNull(getUserByPhone(phone))) {
+            errorMessage = "Phone already exists!";
             // add info error
         }
 
-        return true;
+        return errorMessage;
     }
 }
