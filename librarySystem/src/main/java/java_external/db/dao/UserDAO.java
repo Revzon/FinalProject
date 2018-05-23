@@ -1,43 +1,44 @@
 package java_external.db.dao;
 
 import java_external.db.dto.User;
+import java_external.enums.Role;
+import java_external.exceptions.DAOException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-/**
- * Created by olga on 14.05.18.
- */
-public class UserDAO extends AbstractDAO {
 
-    private static final String ADD_USER_QUERY = "INSERT INTO user(first_name, second_name, patronimyc_name, login, email, phone, " +
-            "password, birth_date, role_id) VALUES(?, ?, ?, ?, ?, ?, ?, NULL, ?)";
-    private static final String UPDATE_USER_QUERY = "UPDATE user SET first_name = ? second_name = ? patronimyc_name = ? " +
-            "email =?  phone = ? birth_date = ? login = ? role_id = ? WHERE id = ?";
-    private static final String DELETE_USER_QUERY = "DELETE user WHERE id = ?";
+public class UserDAO extends AbstractDAO implements CRUD<User> {
 
+    private static final String ADD_USER_QUERY = "INSERT INTO user(first_name, second_name, patronymic_name, login, email, phone, " +
+            "password, role_id) VALUES(?, ?, ?, ?, ?, ?, ?, 1)";
+    private static final String UPDATE_USER_ALL_DATA_QUERY = "UPDATE user SET first_name = ?, second_name = ?, patronymic_name = ?, " +
+            "email =?,  phone = ?, login = ?, password = ?, role_id = ? WHERE id = ?";
+    private static final String UPDATE_USER_CHANGABLE_DATA_QUERY = "UPDATE user SET first_name = ?, second_name = ?, patronymic_name = ?, " +
+            "email =?,  phone = ? WHERE id = ?";
+    private static final String UPDATE_USER_ROLE_QUERY = "UPDATE user SET role_id = ? WHERE id = ?";
+    private static final String UPDATE_USER_PASSWORD_QUERY = "UPDATE user SET password = ? WHERE id = ?";
+    private static final String GET_COUNT = "SELECT COUNT(id) as count FROM user";
+    private static final String DELETE_USER_QUERY = "DELETE FROM user WHERE id = ?";
     private static final String FIND_USER_BY_ID = "SELECT * FROM user WHERE id = ?";
     private static final String FIND_USER_BY_EMAIL = "SELECT * FROM user WHERE email = ?";
     private static final String FIND_USER_BY_PHONE = "SELECT * FROM user WHERE phohe = ?";
     private static final String FIND_USER_BY_LOGIN = "SELECT * FROM user WHERE login = ?";
-    private static final String FIND_ALL = "SELECT * FROM user";
-    private static final String FIND_ALL_READERS = "SELECT * FROM user WHERE role_id = 1";
-    private static final String FIND_ALL_USERS_BY_ROLE_ID = "SELECT * FROM user WHERE role_id =?";
+    private static final String FIND_ALL = "SELECT * FROM user ORDER BY user.first_name";
+    private static final String FIND_ALL_PAGINATE = "SELECT * FROM user LIMIT 10 OFFSET ?";
 
     private final static String USER_ID = "id";
     private final static String USER_FIRST_NAME = "first_name";
     private final static String USER_SECOND_NAME = "second_name";
-    private final static String USER_PATRONIMYC_NAME = "patronimyc_name";
+    private final static String USER_PATRONIMYC_NAME = "patronymic_name";
     private final static String USER_EMAIL = "email";
     private final static String USER_LOGIN = "login";
     private final static String USER_PHONE = "phone";
     private final static String USER_PASSWORD = "password";
     private final static String USER_ROLE_ID = "role_id";
-    private final static String USER_BIRTH_DATE = "birth_date";
 
 
     private static UserDAO userDAO;
@@ -49,6 +50,20 @@ public class UserDAO extends AbstractDAO {
         return userDAO;
     }
 
+    public int getCount() {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(GET_COUNT);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return getCountFromRS(resultSet);
+        } catch (SQLException e) {
+            throw new DAOException(e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
     public void insert(User user) {
         PreparedStatement preparedStatement = null;
         try {
@@ -56,14 +71,11 @@ public class UserDAO extends AbstractDAO {
             preparedStatement = connection.prepareStatement(ADD_USER_QUERY);
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getSecondName());
-            preparedStatement.setString(3, user.getPatronimycName());
+            preparedStatement.setString(3, user.getPatronymicName());
             preparedStatement.setString(4, user.getLogin());
             preparedStatement.setString(5, user.getEmail());
             preparedStatement.setString(6, user.getPhone());
             preparedStatement.setString(7, user.getPassword());
-//            preparedStatement.setDate(4, new java.sql.Date(session_commands.getBirthDate()));
-            preparedStatement.setInt(9, user.getRole().getId());
-
 
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -86,27 +98,98 @@ public class UserDAO extends AbstractDAO {
         }
     }
 
+
     public void update(User user) {
         PreparedStatement preparedStatement = null;
         try {
             connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_QUERY);
+            preparedStatement = connection.prepareStatement(UPDATE_USER_ALL_DATA_QUERY);
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getSecondName());
-            preparedStatement.setString(3, user.getPatronimycName());
-            preparedStatement.setString(4, user.getLogin());
-            preparedStatement.setString(5, user.getEmail());
-            preparedStatement.setString(6, user.getPhone());
+            preparedStatement.setString(3, user.getPatronymicName());
+            preparedStatement.setString(4, user.getEmail());
+            preparedStatement.setString(5, user.getPhone());
+            preparedStatement.setString(6, user.getLogin());
             preparedStatement.setString(7, user.getPassword());
-//            preparedStatement.setDate(8, new java.sql.Date(session_commands.getBirthDate()));
+            preparedStatement.setInt(8, user.getRole().getId());
+            preparedStatement.setInt(9, user.getId());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-//            log.warn("SQLException at author update()", e);
+//            log.warn("SQLException at user update()", e);
         } finally {
             closeConnection(null, preparedStatement);
         }
     }
+
+    public void updateChangableData(User user) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(UPDATE_USER_CHANGABLE_DATA_QUERY);
+            preparedStatement.setString(1, user.getFirstName());
+            preparedStatement.setString(2, user.getSecondName());
+            preparedStatement.setString(3, user.getPatronymicName());
+            preparedStatement.setString(4, user.getEmail());
+            preparedStatement.setString(5, user.getPhone());
+            preparedStatement.setInt(6, user.getId());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at user update()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
+    public void updateRole(User user) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(UPDATE_USER_ROLE_QUERY);
+            preparedStatement.setInt(1, user.getRole().getId());
+            preparedStatement.setInt(2, user.getId());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at user updateRole()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
+    public void updateRole(int id, int roleId) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(UPDATE_USER_ROLE_QUERY);
+            preparedStatement.setInt(2, id);
+            preparedStatement.setInt(1, roleId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at user update()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
+    public void updatePassword(User user) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(UPDATE_USER_PASSWORD_QUERY);
+            preparedStatement.setString(1, user.getPassword());
+            preparedStatement.setInt(2, user.getId());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at user updatePassword()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
 
     public void delete(int id) {
         PreparedStatement preparedStatement = null;
@@ -176,16 +259,13 @@ public class UserDAO extends AbstractDAO {
             preparedStatement = connection.prepareStatement(FIND_USER_BY_PHONE);
             preparedStatement.setString(1, phone);
             resultSet = preparedStatement.executeQuery();
-
-
             while (resultSet.next()) {
                 user = fillInUser(resultSet);
             }
         } catch (SQLException e) {
-//            log.warn("SQLException at book findByPhone()", e);
+            throw new DAOException(e);
         } finally {
             closeConnection(resultSet, preparedStatement);
-
         }
         return user;
     }
@@ -199,13 +279,11 @@ public class UserDAO extends AbstractDAO {
             preparedStatement = connection.prepareStatement(FIND_USER_BY_LOGIN);
             preparedStatement.setString(1, login);
             resultSet = preparedStatement.executeQuery();
-
-
             while (resultSet.next()) {
                 user = fillInUser(resultSet);
             }
         } catch (SQLException e) {
-//            log.warn("SQLException at book findByLogin()", e);
+            throw new DAOException(e);
         } finally {
             closeConnection(resultSet, preparedStatement);
 
@@ -213,27 +291,25 @@ public class UserDAO extends AbstractDAO {
         return user;
     }
 
-    public List<User> findAll() {
+    public List<User> findAll(int offset) {
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         User user = null;
         List<User> userList = null;
         try {
             connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL);
+            preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
+            preparedStatement.setInt(1, offset);
             resultSet = preparedStatement.executeQuery();
-
             userList = new ArrayList<User>();
-
             while (resultSet.next()) {
-
                 user = fillInUser(resultSet);
                 if (user != null) {
                     userList.add(user);
                 }
             }
         } catch (SQLException e) {
-//            log.warn("SQLException at book findAll()", e);
+            throw new DAOException(e);
         } finally {
             closeConnection(resultSet, preparedStatement);
 
@@ -241,62 +317,27 @@ public class UserDAO extends AbstractDAO {
         return userList;
     }
 
-    public List<User> findAllReaders() {
+    public List<User> findAll() {
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         User user = null;
-        List<User> readersList = null;
         try {
             connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_READERS);
+            preparedStatement = connection.prepareStatement(FIND_ALL);
             resultSet = preparedStatement.executeQuery();
-
-            readersList = new ArrayList<User>();
-
+            List<User> userList = new ArrayList<User>();
             while (resultSet.next()) {
-
                 user = fillInUser(resultSet);
                 if (user != null) {
-                    readersList.add(user);
+                    userList.add(user);
                 }
             }
+            return userList;
         } catch (SQLException e) {
-//            log.warn("SQLException at session_commands findAllReaders()", e);
+            throw new DAOException(e);
         } finally {
             closeConnection(resultSet, preparedStatement);
-
         }
-        return readersList;
-    }
-
-
-    public List<User> findAllByRoleId(int roleId) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        List<User> readersList = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_USERS_BY_ROLE_ID);
-            preparedStatement.setInt(1, roleId);
-            resultSet = preparedStatement.executeQuery();
-
-            readersList = new ArrayList<User>();
-
-            while (resultSet.next()) {
-
-                user = fillInUser(resultSet);
-                if (user != null) {
-                    readersList.add(user);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at session_commands findAllReaders()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return readersList;
     }
 
     private User fillInUser(ResultSet resultSet) {
@@ -305,33 +346,29 @@ public class UserDAO extends AbstractDAO {
         try {
 
             int id = resultSet.getInt(USER_ID);
-
             String firstName = resultSet.getString(USER_FIRST_NAME);
             String secondName = resultSet.getString(USER_SECOND_NAME);
-            String patronimycName = resultSet.getString(USER_PATRONIMYC_NAME);
+            String patronymicName = resultSet.getString(USER_PATRONIMYC_NAME);
             String login = resultSet.getString(USER_LOGIN);
             String email = resultSet.getString(USER_EMAIL);
             String phone = resultSet.getString(USER_PHONE);
             String password = resultSet.getString(USER_PASSWORD);
-            int roleId = resultSet.getInt(USER_ROLE_ID);
-            Date birthday = resultSet.getDate(USER_BIRTH_DATE);
+            Role role = Role.getRoleByd(resultSet.getInt(USER_ROLE_ID));
 
+            user.setId(id);
             user.setFirstName(firstName);
             user.setSecondName(secondName);
-            user.setPatronimycName(patronimycName);
+            user.setPatronymicName(patronymicName);
             user.setLogin(login);
             user.setEmail(email);
             user.setPhone(phone);
             user.setPassword(password);
-            user.setBirthDate(birthday);
-//            session_commands.setRole(roleId);
-
+            user.setRole(role);
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return user;
     }
-
 
 }

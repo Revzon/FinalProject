@@ -1,21 +1,60 @@
 package java_external.db.dao;
 
-/**
- * Created by olga on 14.05.18.
- */
-public class BookAuthorDAO {
+import java.sql.JDBCType;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-    private static BookAuthorDAO bookAuthorDAO;
+
+
+
+public class BookAuthorDAO extends AbstractDAO{
+
+    private static final String ADD_BOOK_AUTHOR = "INSERT INTO book_author(book_id, author_id) VALUES(?, ?)";
+    private static final String DELETE_BOOK_AUTHOR = "DELETE FROM book_author WHERE book_id = ? AND author_id = ?";
+
+    private final static String BOOK_AUTHOR_BOOK_ID = "book_id";
+    private final static String BOOK_AUTHOR_AUTHOR_ID = "author_id";
+
+    private static class Holder {
+        private static final BookAuthorDAO INSTANCE = new BookAuthorDAO();
+    }
 
     public static BookAuthorDAO getInstance() {
-        if (bookAuthorDAO == null) {
-            bookAuthorDAO = new BookAuthorDAO();
-        }
-        return bookAuthorDAO;
+        return Holder.INSTANCE;
     }
 
 
+    public void insert(int bookId, int authorId) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(ADD_BOOK_AUTHOR);
+            preparedStatement.setInt(1, bookId);
+            preparedStatement.setInt(2, authorId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at book_author insert()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        };
+    }
 
-
+    public void delete(int bookId, int authorId) {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(DELETE_BOOK_AUTHOR);
+            preparedStatement.setInt(1, bookId);
+            preparedStatement.setInt(2, authorId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            log.warn("SQLException at book_author delete()", e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+        ;
+    }
 
 }

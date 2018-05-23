@@ -1,31 +1,33 @@
 package java_external.db.dao;
 
 import java_external.db.dto.Author;
-
+import java_external.exceptions.DAOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-/**
- * Created by olga on 13.05.18.
- */
+
+
+
 public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
 
-    private static final String ADD_AUTHOR_QUERY = "INSERT INTO author(first_name, second_name, patronimyc_name, birth_date) VALUES(?, ?, ?, ?)";
-    private static final String UPDATE_AUTHOR_QUERY = "UPDATE author SET first_name = ? second_name = ? patronimyc_name = ? birth_date = ? WHERE id = ?";
-    private static final String DELETE_AUTHOR_QUERY = "DELETE author WHERE id = ?";
+    private static final String ADD_AUTHOR_QUERY = "INSERT INTO author(first_name, second_name, patronymic_name) VALUES(?, ?, ?, ?)";
+    private static final String UPDATE_AUTHOR_QUERY = "UPDATE author SET first_name = ?, second_name = ?, patronymic_name = ? WHERE id = ?";
+    private static final String DELETE_AUTHOR_QUERY = "DELETE FROM author WHERE id = ?";
+    private static final String GET_COUNT = "SELECT COUNT(id) as count FROM author";
+
     private static final String FIND_AUTHOR_BY_ID = "SELECT * FROM author WHERE id = ?";
-    private static final String FIND_AUTHOR_BY_BOOK_ID = "SELECT * FROM author RIGHT JOIN ON book_author book_author.book_id = book.id WHERE book_author.book_id = ?";
+    private static final String FIND_AUTHORS_BY_ID_ARRAY = "SELECT * FROM author WHERE id IN ?";
+    private static final String FIND_AUTHOR_BY_BOOK_ID = "SELECT * FROM author RIGHT JOIN book_author ON book_author.author_id = author.id WHERE book_author.book_id = ?";
     private static final String FIND_ALL = "SELECT * FROM author";
+    private static final String FIND_ALL_PAGINATE = "SELECT * FROM author LIMIT 10 OFFSET ?";
 
     private final static String AUTHOR_ID = "id";
     private final static String AUTHOR_FIRST_NAME = "first_name";
     private final static String AUTHOR_SECOND_NAME = "second_name";
-    private final static String AUTHOR_PATRONIMYC_NAME = "patronimyc_name";
-    private final static String AUTHOR_BIRTH_DATE = "birth_date";
+    private final static String AUTHOR_PATRONIMYC_NAME = "patronymic_name";
 
 
     private static AuthorDAO authorDAO;
@@ -37,6 +39,20 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
         return authorDAO;
     }
 
+    public int getCount() {
+        PreparedStatement preparedStatement = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(GET_COUNT);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return getCountFromRS(resultSet);
+        } catch (SQLException e) {
+            throw new DAOException(e);
+        } finally {
+            closeConnection(null, preparedStatement);
+        }
+    }
+
 
     public void insert(Author author) {
         PreparedStatement preparedStatement = null;
@@ -45,8 +61,7 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
             preparedStatement = connection.prepareStatement(ADD_AUTHOR_QUERY);
             preparedStatement.setString(1, author.getFirstName());
             preparedStatement.setString(2, author.getSecondName());
-            preparedStatement.setString(3, author.getPatronimycName());
-            preparedStatement.setDate(4, java.sql.Date.valueOf(String.valueOf(author.getBirthDate())));
+            preparedStatement.setString(3, author.getPatronymicName());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -63,8 +78,9 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
             preparedStatement = connection.prepareStatement(UPDATE_AUTHOR_QUERY);
             preparedStatement.setString(1, author.getFirstName());
             preparedStatement.setString(2, author.getSecondName());
-            preparedStatement.setString(3, author.getPatronimycName());
-            preparedStatement.setDate(4, java.sql.Date.valueOf(String.valueOf(author.getBirthDate())));
+            preparedStatement.setString(3, author.getPatronymicName());
+            preparedStatement.setInt(4, author.getId());
+
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -90,6 +106,32 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
         }
     }
 
+
+    public List<Author> findByIdArray(String[] idArray) {
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        List<Author> authorList = new ArrayList<Author>();
+        try {
+            connection = getConnection();
+
+            preparedStatement = connection.prepareStatement(FIND_AUTHORS_BY_ID_ARRAY);
+            preparedStatement.setArray(1, connection.createArrayOf("INT", idArray));
+            resultSet = preparedStatement.executeQuery();
+            authorList = new ArrayList<Author>();
+            while (resultSet.next()) {
+                Author author = fillInAuthor(resultSet);
+                if (author != null) {
+                    authorList.add(author);
+                }
+            }
+        } catch (SQLException e) {
+//            log.warn("SQLException at author findAuthorsByBookId()", e);
+        } finally {
+            closeConnection(resultSet, preparedStatement);
+        }
+        return authorList;
+    }
+
     public Author findById(int id) {
         Author author = null;
         ResultSet resultSet = null;
@@ -110,10 +152,10 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
         return author;
     }
 
-    public List<Author> findAuthorsByAuthorId(int bookId) {
+    public List<Author> findAuthorsByBookId(int bookId) {
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
-        List authorList = null;
+        List<Author> authorList = new ArrayList<Author>();
         try {
             connection = getConnection();
             preparedStatement = connection.prepareStatement(FIND_AUTHOR_BY_BOOK_ID);
@@ -127,7 +169,31 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
                 }
             }
         } catch (SQLException e) {
-//            log.warn("SQLException at author findAuthorsByAuthorId()", e);
+//            log.warn("SQLException at author findAuthorsByBookId()", e);
+        } finally {
+            closeConnection(resultSet, preparedStatement);
+        }
+        return authorList;
+    }
+
+    public List<Author> findAll(int offset) {
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        List authorList = null;
+        try {
+            connection = getConnection();
+            preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
+            preparedStatement.setInt(1, offset);
+            resultSet = preparedStatement.executeQuery();
+            authorList = new ArrayList<Author>();
+            while (resultSet.next()) {
+                Author author = fillInAuthor(resultSet);
+                if (author != null) {
+                    authorList.add(author);
+                }
+            }
+        } catch (SQLException e) {
+//            log.warn("SQLException at author findAuthorsByBookId()", e);
         } finally {
             closeConnection(resultSet, preparedStatement);
         }
@@ -150,7 +216,7 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
                 }
             }
         } catch (SQLException e) {
-//            log.warn("SQLException at author findAuthorsByAuthorId()", e);
+//            log.warn("SQLException at author findAuthorsByBookId()", e);
         } finally {
             closeConnection(resultSet, preparedStatement);
         }
@@ -159,23 +225,21 @@ public class AuthorDAO extends AbstractDAO implements CRUD<Author> {
 
 
     private Author fillInAuthor(ResultSet resultSet) {
-        Author book = new Author();
+        Author author = new Author();
 
         try {
             int id = resultSet.getInt(AUTHOR_ID);
             String firstName = resultSet.getString(AUTHOR_FIRST_NAME);
             String secondName = resultSet.getString(AUTHOR_SECOND_NAME);
-            String patronimycName = resultSet.getString(AUTHOR_PATRONIMYC_NAME);
-            Date birthDate = resultSet.getDate(AUTHOR_BIRTH_DATE);
+            String patronymicName = resultSet.getString(AUTHOR_PATRONIMYC_NAME);;
 
-            book.setId(id);
-            book.setFirstName(firstName);
-            book.setSecondName(secondName);
-            book.setPatronimycName(patronimycName);
-            book.setBirthDate(birthDate);
+            author.setId(id);
+            author.setFirstName(firstName);
+            author.setSecondName(secondName);
+            author.setPatronymicName(patronymicName);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return book;
+        return author;
     }
 }
