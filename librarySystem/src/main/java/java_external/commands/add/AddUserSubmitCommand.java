@@ -1,26 +1,23 @@
-package java_external.commands.session_commands;
+package java_external.commands.add;
 
 import java_external.commands.Command;
 import java_external.db.dto.User;
 import java_external.services.manager.ConfigurationManager;
-import java_external.services.RegistrationService;
+import java_external.services.UserAuthService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
 
-/**
- * Created by olga on 16.05.18.
- */
-public class RegistrationSubmitCommand implements Command {
-
+public class AddUserSubmitCommand implements Command {
+    private static final String ATTR_NAME_ERROR_MESSAGE = "errorMessage";
 
     @Override
     public String execute(HttpServletRequest request) {
 
-        RegistrationService registrationService = RegistrationService.getInstance();
+        UserAuthService userAuthService = UserAuthService.getInstance();
         String page;
 
-        User user = registrationService.registrateUser(request);
+        User user = userAuthService.registrateUser(request);
 
         if (Objects.nonNull(user)) {
 
@@ -31,8 +28,6 @@ public class RegistrationSubmitCommand implements Command {
 //                    null);
 
         } else {
-//            request.setAttribute(ATTR_NAME_ERROR_MESSAGE,
-//                    "login, email or phone already exist");
 
             page = ConfigurationManager.getInstance().getProperty(
                     ConfigurationManager.REGISTRATION_PAGE_PATH);
