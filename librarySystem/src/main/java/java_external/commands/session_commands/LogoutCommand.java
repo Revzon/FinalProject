@@ -5,9 +5,9 @@ import java_external.services.manager.ConfigurationManager;
 
 import javax.servlet.http.HttpServletRequest;
 
-/**
- * Created by olga on 16.05.18.
- */
+
+
+
 public class LogoutCommand implements Command {
 
     @Override
