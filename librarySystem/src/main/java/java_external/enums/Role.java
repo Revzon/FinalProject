@@ -1,10 +1,8 @@
 package java_external.enums;
 
-/**
- * Created by olga on 15.05.18.
- */
 public enum Role {
-    READER(1), ADMIN(2), GUEST(0);
+
+    GUEST(2), READER(1), ADMIN(0);
     private int id;
 
     Role(int id) {
@@ -13,5 +11,14 @@ public enum Role {
 
     public int getId() {
         return id;
+    }
+
+    public static Role getRoleByd(int id) {
+        for (Role role: Role.values()) {
+            if (role.id == id) {
+                return role;
+            }
+        }
+        return null;
     }
 }

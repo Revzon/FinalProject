@@ -70,7 +70,8 @@ public class UserAuthService {
     }
 
 
-    private User fillUser(HttpServletRequest request) {
+    public User fillUser(HttpServletRequest request) {
+        User newUser = new User();
 
         String username = request.getParameter(USERNAME_HEADER);
         String email = request.getParameter(EMAIL_HEADER);
@@ -79,16 +80,16 @@ public class UserAuthService {
         String secondName = request.getParameter(SECONDNAME_HEADER);
         String patronymicName = request.getParameter(PATRONIMYCNAME_HEADER);
         String passwordRaw = request.getParameter(PASSWORD_HEADER);
-        String passwordHashed = Md5.md5Password(passwordRaw);
-
-        User newUser = new User();
+        if (StringUtils.isNoneBlank(passwordRaw)) {
+            String passwordHashed = Md5.md5Password(passwordRaw);
+            newUser.setPassword(passwordHashed);
+        }
         newUser.setFirstName(firstName);
         newUser.setSecondName(secondName);
         newUser.setPatronymicName(patronymicName);
         newUser.setLogin(username);
         newUser.setEmail(email);
         newUser.setPhone(phone);
-        newUser.setPassword(passwordHashed);
         newUser.setRole(Role.READER);
         return newUser;
     }

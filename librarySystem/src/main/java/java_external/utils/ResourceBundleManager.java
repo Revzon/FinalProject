@@ -3,20 +3,17 @@ package java_external.utils;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-public class ResourceBundleManager{
+public class ResourceBundleManager {
 
-    private static ResourceBundle resourceBundle = ResourceBundle.getBundle("text", new Locale("en","EN"));
-
-
-    public static void setNewLocale(Locale locale){
-        resourceBundle = ResourceBundle.getBundle("text", locale);
+    public static void setNewLocale(Locale locale) {
+        Locale.setDefault(locale);
     }
 
     public static ResourceBundle getResourceBundle() {
-        return resourceBundle;
+        return ResourceBundle.getBundle("properties/text", new UTF8Control());
     }
 
     public static String getMessage(String key) {
-        return resourceBundle.getString(key);
+        return ResourceBundle.getBundle("properties/text", new UTF8Control()).getString(key);
     }
 }
