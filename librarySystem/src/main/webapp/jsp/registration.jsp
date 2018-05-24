@@ -1,105 +1,125 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="i18n" uri="i18n" %>
+
 <html>
 <head>
-    <title>Registration page</title>
     <link href="css/style.css" rel=stylesheet type="text/css">
     <link href="css/flags.css" rel=stylesheet type="text/css">
+    <title>${i18n:getMessage("registration-page")}</title>
 </head>
-
-<%----%>
 
 <body>
 <div id="container">
-    <div class="upper-panel form">
-        <div class="lang">
-            Language:
-        </div>
-        <div class="lang lang-ua">
-            <a href="library?action=ref&lang=ua"><img src="/img/blank.gif" class="flag flag-ua" alt="Ukr"/></a>
-        </div>
-
-        <div class="lang lang-ru">
-            <a href="library?action=ref&lang=ru"><img src="/img/blank.gif" class="flag flag-ru" alt="Ru"/></a>
-        </div>
-
-        <div class="lang lang-en">
-            <a href="library?action=ref&lang=en"><img src="/img/blank.gif" class="flag flag-gb" alt="En"/></a>
-        </div>
-
-    </div>
-
+    <jsp:include page="upper-panel.jsp"/>
 
     <div class="panel">
 
-        <ul class="form sidebar">
-            <li><a href="library?action=login">Welcome page</a></li>
-            <li><a href="search-page.jsp">Search book</a></li>
-            <li><a href="error-page.jsp">Library catalog</a></li>
-        </ul>
+        <jsp:include page="menu.jsp"/>
 
         <form method="POST" action="/library?action=register-submit" class="form main-form">
 
+
             <table class="plain-text">
                 <tr>
-                    <td><h1>Registration form</h1></td>
+                    <td colspan="2">
+                        <h1>${i18n:getMessage("registration-page")}</h1>
+                    </td>
                 </tr>
                 <tr>
-                    <td>First name</td>
+                    <td colspan="2" class="error-message">
+                        <c:if test='${errorMessage!=""}'>
+                            <c:out value="${errorMessage}"/>
+                        </c:if>
+                    </td>
+                </tr>
+                <tr>
+                    <td>${i18n:getMessage("first-name")}</td>
                     <td><input name="firstName" type="text" placeholder="First name" pattern="[a-яA-Я]+"></td>
                 </tr>
                 <tr>
-                    <td>Second name</td>
+                    <td>${i18n:getMessage("second-name")}</td>
                     <td><input name="secondName" type="text" placeholder="Second name" pattern="[a-яA-Я]+"></td>
                 </tr>
                 <tr>
-                    <td>Patronimyc name</td>
-                    <td><input name="patronimycName" type="text" placeholder="Patronimyc name" pattern="[a-яA-Я]+"></td>
+                    <td>${i18n:getMessage("patronymic-name")}</td>
+                    <td><input name="patronymicName" type="text" placeholder="Patronymic name" pattern="[a-яA-Я]+">
+                    </td>
                 </tr>
                 <tr>
-                    <td>Email</td>
+                    <td>${i18n:getMessage("email")}</td>
                     <td><input id="email" name="email" type="text" placeholder="E-mail"
                                pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}"></td>
                 </tr>
                 <tr>
-                    <td>Phone</td>
+                    <td>${i18n:getMessage("phone")}</td>
                     <td><input id="phone" name="phone" type="text" placeholder="Phone +380*********"
                                pattern="(?:0|\(?\+380\)?\s?|0033\s?)[5-79](?:[\.\-\s]?\d\d){4}"></td>
                 </tr>
                 <tr>
-                    <td>Username</td>
+                    <td>${i18n:getMessage("login")}</td>
                     <td><input name="username" id="username" type="text" placeholder="username"
                                pattern="[a-zA-Z][a-zA-Z0-9_]{4,20}"></td>
                 </tr>
                 <tr>
-                    <td>Date of birth</td>
-                    <td><input name="birthday" type="date" placeholder="Date of birth"
-                               pattern="(0[1-9]|1[0-9]|2[0-9]|3[01]).(0[1-9]|1[012]).[0-9]{4}"></td>
-                </tr>
-
-                <tr>
-                    <td>Password</td>
-                    <td><input name="password" type="password" placeholder="Your password"
+                    <td>${i18n:getMessage("password")}</td>
+                    <td><input id="password" name="password" type="password" placeholder="Your password"
                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                               title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters"
-                               required></td>
+                               title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters
+                               required" onkeyup="validate()" ;></td>
                 </tr>
                 <tr>
-                    <td>Password (repeat)</td>
-                    <td><input name="passwordControl" type="password" placeholder="Repeat password"
-                               pattern="(?=.{8,}$)(?=.*[a-z])(?=.*[A-Z])(?!.*\s).*$"></td>
+                    <td>${i18n:getMessage("password-confirm")}</td>
+                    <td><input id="passwordConfirm" name="passwordConfirm" type="password"
+                               placeholder="Repeat password"
+                               pattern="(?=.{8,}$)(?=.*[a-z])(?=.*[A-Z])(?!.*\s).*$"
+                               onkeyup="validate()" ;></td>
                 </tr>
                 <tr>
-                    <td><input name="register" type="submit" class="button" value="Register"></td>
+                    <td colspan="2"><span id="confirmMessage" class="confirmMessage"></span></td>
+                </tr>
+                <tr>
+                    <td colspan="2"><input name="register" type="submit" class="button" value="Register"></td>
                 </tr>
 
             </table>
 
+            <script type="text/javascript">
+                function validate() {
+                    var password = document.getElementById("password");
+                    var confirmPassword = document.getElementById("passwordConfirm");
+                    var confirmMessage = document.getElementById("confirmMessage");
+                    var matchColor = "#66cc66";
+                    var notMatchColor = "#ff0000";
+
+                    if ((password.value == "") || (confirmPassword.value == (""))) {
+                        confirmPassword.style.borderColor = null;
+                        confirmMessage.style.color = null;
+                        confirmMessage.innerHTML = "";
+                        return false
+
+                    } else {
+
+                        if (password.value != confirmPassword.value) {
+                            confirmPassword.style.borderColor = notMatchColor;
+                            confirmMessage.style.color = notMatchColor;
+                            confirmMessage.innerHTML = "Passwords are not equal!";
+                            return false
+                        }
+                        else {
+                            confirmPassword.style.borderColor = matchColor;
+                            confirmMessage.style.color = matchColor;
+                            confirmMessage.innerHTML = "Passwords are equal!";
+                            return true
+                        }
+                    }
+                }
+            </script>
+
         </form>
+
     </div>
 
 </div>
 </body>
 </html>
-

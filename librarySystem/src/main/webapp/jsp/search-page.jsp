@@ -1,61 +1,58 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="i18n" uri="i18n" %>
+
 <html>
-    <head>
-        <title>Search page</title>
-        <link href="css/style.css" rel=stylesheet type="text/css">
-        <link href="css/flags.css" rel=stylesheet type="text/css">
-    </head>
-    <body>
-    <div id = container>
-        <div id = "header"></div>
+<head>
+    <title>${i18n:getMessage("library-catalog")}</title>
+    <link href="css/style.css" rel=stylesheet type="text/css">
+    <link href="css/selector.css" rel="stylesheet" type="text/css">
+</head>
 
-        <div id="upper-panel">
-            <div id="lang">
-                Language:
-                <div id="lang-ru">
-                    <img src="/img/blank.gif" class="flag flag-ru" alt="русский"/>
-                    <a href="library?action=ref&lang=ru">русский</a>
-                </div>
-                <div id="lang-ua">
-                    <img src="/img/blank.gif" class="flag flag-ua" alt="українська"/>
-                    <a href="library?action=ref&lang=ua">українська</a>
-                </div>
-                <div id="lang-en">
-                    <img src="/img/blank.gif" class="flag flag-gb" alt="english"/>
-                    <a href="library?action=ref&lang=en">english</a>
-                </div>
-            </div>
+<body>
+<div id="container">
+    <jsp:include page="upper-panel.jsp"/>
 
-            <c:if test="${!user.logged}">
-                <fmt:message key="notlogged"/>
-            </c:if>
-            <c:if test="${user.logged}">
-                <fmt:message key="loggedas"/>${user.name}, <c:if
-                    test="${user.type eq 'ADMIN'}">
-                <fmt:message key="admin"/>
-            </c:if>
-                <c:if test="${user.type eq 'READER'}">
-                    <fmt:message key="user"/>
-                </c:if>
-                <a href="library?command=logout"><fmt:message key="logout"/> </a>
-            </c:if>
+    <div class="panel">
+
+        <jsp:include page="menu.jsp"/>
+
+        <div class="form main-form">
+
+            <h1>${i18n:getMessage("book-list")}</h1>
+
+            <form method="POST" action="/library?action=findBook">
+
+                <table class="plain-text">
+                    <tr id="search">
+                        <td colspan="2">${i18n:getMessage("search")}</td>
+                        <td>
+                            <div class="styled-select slate plain-text" style="width:200px;">
+                                <select name="searchProperty">
+                                    <option value="TITLE">${i18n:getMessage("title")}</option>
+                                    <option value="AUTHOR">${i18n:getMessage("author")}</option>
+                                    <option value="KEYWORD">${i18n:getMessage("keyword")}</option>
+                                    <option value="GENRE">${i18n:getMessage("genre")}</option>
+                                    <option value="PUBLISHMENT">${i18n:getMessage("publishment")}</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td><input class="search-input" title="searchword" name="searchparameter"
+                                   id="searchparameter" type="text"></td>
+                        <td><input name="searchMode" type="hidden" value="NON_STRICT"></td>
+                        <td><input type="submit" class="button" name="search" id="search-button" value="Search">
+                        </td>
+                    </tr>
+                </table>
+            </form>
+
+            <jsp:include page="list-pages/book-list.jsp">
+                <jsp:param name="books" value="${books}"/>
+            </jsp:include>
+
         </div>
-
-        <h1>Search books here</h1>
-
-        <select name="searchTypelist" form="search">
-            <option value="author">Author</option>
-            <option value="title">Title</option>
-            <option value="keyword">Keyword</option>
-            <option value="genre">Genre</option>
-        </select>
-
-        <form method="POST" action="/library?action=findBook" id = "search">
-            <input title="searchword" name="searchparameter" id="searchparameter" type="text">
-            <input type="image" src="../img/search.png" size="10%" alt="Submit" style="float:inherit;width:32px;height:32px;border: medium">
-        </form>
     </div>
-    </body>
+
+</div>
+</body>
 </html>
