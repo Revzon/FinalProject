@@ -2,18 +2,18 @@ package java_external.db.dao;
 
 import java_external.db.dto.*;
 import java_external.enums.SearchMode;
-import java_external.enums.SearchType;
-import java_external.exceptions.DAOException;
+import java_external.enums.SearchProperty;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
+import java.sql.Date;
 import java.sql.JDBCType;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.sql.Date;
 import java.util.List;
+
+import static java_external.db.dao.base.QueryManager.executeQuery;
 
 
 public class BookDAO extends AbstractDAO {
@@ -87,35 +87,16 @@ public class BookDAO extends AbstractDAO {
     }
 
     public int getCount() {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(GET_COUNT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return getCountFromRS(resultSet);
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        return executeQuery(GET_COUNT, this::getCountFromRS);
     }
 
     public void insert(Book book) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_BOOK_QUERY);
+        executeQuery(ADD_BOOK_QUERY, preparedStatement -> {
             preparedStatement.setString(1, book.getTitle());
             preparedStatement.setInt(2, book.getPublishment().getId());
             preparedStatement.setInt(3, book.getGenre().getId());
             preparedStatement.setInt(4, book.getLocation().getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book insert()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
 
         addBookAuthors(book);
         addBookKeywords(book);
@@ -123,37 +104,34 @@ public class BookDAO extends AbstractDAO {
 
     private void addBookKeywords(Book book) {
         BookKeywordDAO bookKeywordDAO = BookKeywordDAO.getInstance();
-        for (Keyword keyword: book.getKeywords()) {
+        for (Keyword keyword : book.getKeywords()) {
             bookKeywordDAO.insert(book.getId(), keyword.getId());
         }
     }
 
     private void addBookAuthors(Book book) {
         BookAuthorDAO bookAuthorDAO = BookAuthorDAO.getInstance();
-        for (Author author: book.getAuthors()) {
+        for (Author author : book.getAuthors()) {
             bookAuthorDAO.insert(book.getId(), author.getId());
         }
     }
 
     private void deleteBookKeywords(Book book) {
         BookKeywordDAO bookKeywordDAO = BookKeywordDAO.getInstance();
-        for (Keyword keyword: book.getKeywords()) {
+        for (Keyword keyword : book.getKeywords()) {
             bookKeywordDAO.delete(book.getId(), keyword.getId());
         }
     }
 
     private void deleteBookAuthors(Book book) {
         BookAuthorDAO bookAuthorDAO = BookAuthorDAO.getInstance();
-        for (Author author: book.getAuthors()) {
+        for (Author author : book.getAuthors()) {
             bookAuthorDAO.delete(book.getId(), author.getId());
         }
     }
 
     public void update(Book book) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_BOOK_QUERY);
+        executeQuery(UPDATE_BOOK_QUERY, preparedStatement -> {
             preparedStatement.setString(1, book.getTitle());
             preparedStatement.setInt(2, book.getPublishment().getId());
             preparedStatement.setInt(3, book.getGenre().getId());
@@ -161,21 +139,15 @@ public class BookDAO extends AbstractDAO {
             if (book.isAvilable()) {
                 preparedStatement.setNull(6, JDBCType.INTEGER.getVendorTypeNumber());
                 preparedStatement.setNull(5, JDBCType.DATE.getVendorTypeNumber());
-            }
-            else {
+            } else {
                 preparedStatement.setInt(6, book.getReader().getId());
                 preparedStatement.setDate(5, book.getDateOfReturn());
             }
-
             preparedStatement.setInt(7, book.getLocation().getId());
             preparedStatement.setInt(8, book.getId());
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
+
         deleteBookAuthors(book);
         deleteBookKeywords(book);
         addBookAuthors(book);
@@ -183,133 +155,87 @@ public class BookDAO extends AbstractDAO {
     }
 
     public void updateBookState(Book book) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            if (book.isAvilable()){
-                preparedStatement = connection.prepareStatement(UPDATE_BOOK_AVIABLE);
+        if (book.isAvilable()) {
+            executeQuery(UPDATE_BOOK_AVIABLE, preparedStatement -> {
                 preparedStatement.setInt(1, book.getId());
-            } else {
-                preparedStatement = connection.prepareStatement(UPDATE_BOOK_NONAVIABLE);
+            });
+        } else {
+            executeQuery(UPDATE_BOOK_NONAVIABLE, preparedStatement -> {
                 preparedStatement.setInt(1, book.getReader().getId());
                 preparedStatement.setInt(2, book.getId());
-            }
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
+            });
         }
     }
 
     public void delete(int id) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_BOOK_QUERY);
+        executeQuery(DELETE_BOOK_QUERY, preparedStatement -> {
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book delete()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-
-        }
+        });
 //        deleteBookAuthors(book);
 //        deleteBookKeywords(book);
     }
 
     public Book findById(int id) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Book book = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_BOOK_BY_ID);
-            preparedStatement.setInt(1, id);
-            resultSet = preparedStatement.executeQuery();
-
-            while (resultSet.next()) {
-                book = fillInBook(resultSet);
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findBookById()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return book;
+        return executeQuery(FIND_BOOK_BY_ID,
+                preparedStatement -> preparedStatement.setInt(1, id),
+                resultSet -> {
+                    if (resultSet.next()) {
+                        return getBookFromRs(resultSet);
+                    }
+                    return null;
+                });
     }
 
     public List<Book> findBooksByAuthorId(int authorId) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List bookList = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_BY_AUTHOR_ID);
-            preparedStatement.setInt(1, authorId);
-            resultSet = preparedStatement.executeQuery();
-            bookList = new ArrayList<Book>();
-            while (resultSet.next()) {
-                Book book = fillInBook(resultSet);
-                if (book != null) {
-                    bookList.add(book);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findBooksByAuthorId()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return bookList;
-    }
-
-    public List<Book> findByAttributeNamepart(SearchType searchType, SearchMode mode, String searchString) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List bookList = new ArrayList<Book>();
-        String query = "";
-        if (mode == SearchMode.NON_STRICT) {
-            query = getNamespaceQueryBySearchType(searchType);
-        } else {
-            query = getIdQueryBySearchType(searchType);
-        }
-
-        if (StringUtils.isNoneBlank(query)) {
-
-            try {
-                connection = getConnection();
-                preparedStatement = connection.prepareStatement(query);
-
-                // ADD CHANGE
-                if (mode == SearchMode.NON_STRICT) {
-                    preparedStatement.setString(1, searchString);
-                } else {
-                    preparedStatement.setInt(1, Integer.parseInt(searchString));
-                }
-
-                resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    Book book = fillInBook(resultSet);
-                    if (book != null) {
-                        bookList.add(book);
+        return executeQuery(FIND_ALL_BY_AUTHOR_ID,
+                preparedStatement -> preparedStatement.setInt(1, authorId),
+                resultSet -> {
+                    ArrayList<Book> bookList = new ArrayList<>();
+                    while (resultSet.next()) {
+                        Book book = getBookFromRs(resultSet);
+                        if (book != null) {
+                            bookList.add(book);
+                        }
                     }
-                }
-            } catch (SQLException e) {
-//            log.warn("SQLException at book findBooksByAuthorId()", e);
-            } finally {
-                closeConnection(resultSet, preparedStatement);
+                    return bookList;
+                });
+    }
+
+    public List<Book> findByAttributeNamepart(SearchProperty searchProperty, SearchMode mode, String searchString) {
+        String query;
+        if (mode == SearchMode.NON_STRICT) {
+            query = getNamespaceQueryBySearchType(searchProperty);
+        } else {
+            query = getIdQueryBySearchType(searchProperty);
+        }
+        if (StringUtils.isNoneBlank(query)) {
+            if (mode == SearchMode.NON_STRICT) {
+                return executeQuery(query,
+                        preparedStatement -> preparedStatement.setString(1, searchString),
+                        this::getBooksFromRS);
+            } else {
+                return executeQuery(query,
+                        preparedStatement -> preparedStatement.setInt(1, Integer.parseInt(searchString)),
+                        this::getBooksFromRS);
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    private List<Book> getBooksFromRS(ResultSet resultSet) throws SQLException {
+        List<Book> bookList = new ArrayList<>();
+        while (resultSet.next()) {
+            Book book = getBookFromRs(resultSet);
+            if (book != null) {
+                bookList.add(book);
             }
         }
         return bookList;
     }
 
-    private String getNamespaceQueryBySearchType(SearchType searchType) {
-        switch (searchType) {
+    private String getNamespaceQueryBySearchType(SearchProperty searchProperty) {
+        switch (searchProperty) {
             case AUTHOR:
                 return FIND_ALL_BY_AUTHOR_NAMEPART;
             case GENRE:
@@ -328,8 +254,8 @@ public class BookDAO extends AbstractDAO {
         }
     }
 
-    private String getIdQueryBySearchType(SearchType searchType) {
-        switch (searchType) {
+    private String getIdQueryBySearchType(SearchProperty searchProperty) {
+        switch (searchProperty) {
             case AUTHOR:
                 return FIND_ALL_BY_AUTHOR_ID;
             case GENRE:
@@ -348,165 +274,67 @@ public class BookDAO extends AbstractDAO {
     }
 
     public List<Book> findAllTakenBooks() {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List bookList = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_TAKEN_BOOKS);
-            resultSet = preparedStatement.executeQuery();
-            bookList = new ArrayList<Book>();
-            while (resultSet.next()) {
-                Book book = fillInBook(resultSet);
-                if (book != null) {
-                    bookList.add(book);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findBooksByAuthorId()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return bookList;
+        return executeQuery(FIND_ALL_TAKEN_BOOKS, this::getBooksFromRS);
     }
 
-    public List<Book> findBooksByReaderId(int readerId) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List bookList = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_BY_READER_ID);
-            preparedStatement.setInt(1, readerId);
-            resultSet = preparedStatement.executeQuery();
-            bookList = new ArrayList<Book>();
-
-            while (resultSet.next()) {
-                Book book = fillInBook(resultSet);
-                if (book != null) {
-                    bookList.add(book);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findBooksByAuthorId()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return bookList;
-    }
 
     public List<Book> findAll(int offset) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        try {
-            connection = getConnection();
-            if (offset >= 0) {
-                // ADD move to constant 0
-                preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
-                preparedStatement.setInt(1, offset);
-            } else {
-                preparedStatement = connection.prepareStatement(FIND_ALL);
-            }
-            resultSet = preparedStatement.executeQuery();
-            List<Book> bookList = new ArrayList<>();
-            while (resultSet.next()) {
-                Book book = fillInBook(resultSet);
-                if (book != null) {
-                    bookList.add(book);
-                }
-            }
-            return bookList;
-        } catch (SQLException e) {
-            logger.error(e);
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
+        return executeQuery(FIND_ALL_PAGINATE,
+                preparedStatement -> preparedStatement.setInt(1, offset),
+                this::getBooksFromRS);
     }
 
     public List<Book> findAll() {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL);
-            resultSet = preparedStatement.executeQuery();
-            List<Book> bookList = new ArrayList<>();
-            while (resultSet.next()) {
-                Book book = fillInBook(resultSet);
-                if (book != null) {
-                    bookList.add(book);
-                }
-            }
-            return bookList;
-        } catch (SQLException e) {
-            logger.error(e);
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
+        return executeQuery(FIND_ALL, this::getBooksFromRS);
     }
 
-    private Book fillInBook(ResultSet resultSet) {
+    private Book getBookFromRs(ResultSet resultSet) throws SQLException {
         Book book = new Book();
-        try {
-            int id = resultSet.getInt(BOOK_ID);
-            String title = resultSet.getString(BOOK_TITLE);
-            boolean avilable = resultSet.getBoolean(BOOK_AVILABLE);
-            Date dateOfReturn = resultSet.getDate(BOOK_DATE_OF_RETURN);
-            book.setId(id);
-            book.setTitle(title);
-            book.setAuthors(getAuthors(id));
-            book.setPublishment(getPublishment(resultSet.getInt(BOOK_PUBLISHMENT_ID)));
-            book.setGenre(getGenre(resultSet.getInt(BOOK_GENRE_ID)));
-            book.setReader(getReader(resultSet.getInt(BOOK_READER)));
-            book.setLocation(getLocation(resultSet.getInt(BOOK_SHELF_ID)));
-            book.setKeywords(getKeywords(id));
-            book.setAvilable(avilable);
-            book.setDateOfReturn(dateOfReturn);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        int id = resultSet.getInt(BOOK_ID);
+        String title = resultSet.getString(BOOK_TITLE);
+        boolean avilable = resultSet.getBoolean(BOOK_AVILABLE);
+        Date dateOfReturn = resultSet.getDate(BOOK_DATE_OF_RETURN);
+        book.setId(id);
+        book.setTitle(title);
+        book.setAuthors(getAuthors(id));
+        book.setPublishment(getPublishment(resultSet.getInt(BOOK_PUBLISHMENT_ID)));
+        book.setGenre(getGenre(resultSet.getInt(BOOK_GENRE_ID)));
+        book.setReader(getReader(resultSet.getInt(BOOK_READER)));
+        book.setLocation(getLocation(resultSet.getInt(BOOK_SHELF_ID)));
+        book.setKeywords(getKeywords(id));
+        book.setAvilable(avilable);
+        book.setDateOfReturn(dateOfReturn);
         return book;
     }
 
     private List<Author> getAuthors(int id) {
         AuthorDAO authorDAO = AuthorDAO.getInstance();
-        List<Author> bookAuthors = authorDAO.findAuthorsByBookId(id);
-        return bookAuthors;
+        return authorDAO.findAuthorsByBookId(id);
     }
 
     private List<Keyword> getKeywords(int id) {
         KeywordDAO keywordDAO = KeywordDAO.getInstance();
-        List<Keyword> bookKeywords = keywordDAO.findKeywordsByBookId(id);
-        return bookKeywords;
+        return keywordDAO.findKeywordsByBookId(id);
     }
 
     private Publishment getPublishment(int publishmentId) {
         PublishmentDAO publishmentDAO = PublishmentDAO.getInstance();
-        Publishment publishment = publishmentDAO.findById(publishmentId);
-        return publishment;
+        return publishmentDAO.findById(publishmentId);
     }
 
     private Genre getGenre(int genreId) {
         GenreDAO genreDAO = GenreDAO.getInstance();
-        Genre genre = genreDAO.findById(genreId);
-        return genre;
+        return genreDAO.findById(genreId);
     }
 
     private Shelf getLocation(int locationId) {
         ShelfDAO shelfDAO = ShelfDAO.getInstance();
-        Shelf shelf = shelfDAO.findById(locationId);
-        return shelf;
+        return shelfDAO.findById(locationId);
     }
 
     private User getReader(int userId) {
         UserDAO userDAO = UserDAO.getInstance();
-        User user = userDAO.findById(userId);
-        return user;
+        return userDAO.findById(userId);
     }
-
 
 }

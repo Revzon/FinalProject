@@ -1,4 +1,4 @@
-package java_external.commands.session_commands;
+package java_external.commands.auth;
 
 import java_external.commands.navigation.SearchpageCommand;
 import java_external.services.authentification.AuthentificationManager;

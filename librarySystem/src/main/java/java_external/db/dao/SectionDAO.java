@@ -1,6 +1,7 @@
 package java_external.db.dao;
 
-import java_external.db.dto.Author;
+import java_external.db.dao.base.CRUD;
+import java_external.db.dao.base.QueryManager;
 import java_external.db.dto.Section;
 import java_external.exceptions.DAOException;
 
@@ -10,8 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
+import static java_external.db.dao.base.QueryManager.executeQuery;
 
 public class SectionDAO extends AbstractDAO implements CRUD<Section> {
 
@@ -21,13 +21,10 @@ public class SectionDAO extends AbstractDAO implements CRUD<Section> {
     private static final String FIND_SECTION_BY_ID = "SELECT * FROM section WHERE id = ?";
     private static final String FIND_ALL = "SELECT * FROM section";
     private static final String FIND_ALL_PAGINATE = "SELECT * FROM section LIMIT 10 OFFSET ?";
-    private static final String FIND_BY_NAMEPART = "SELECT * FROM section WHERE name LIKE ?";
     private static final String GET_COUNT = "SELECT COUNT(id) as count FROM section";
-
 
     private final static String SECTION_ID = "id";
     private final static String SECTION_NAME = "name";
-
 
     private static SectionDAO sectionDAO;
 
@@ -39,157 +36,74 @@ public class SectionDAO extends AbstractDAO implements CRUD<Section> {
     }
 
     public int getCount() {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(GET_COUNT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return getCountFromRS(resultSet);
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        return executeQuery(GET_COUNT, this::getCountFromRS);
     }
 
     public void insert(Section section) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_SECTION_QUERY);
+        executeQuery(ADD_SECTION_QUERY, preparedStatement -> {
             preparedStatement.setString(1, section.getName());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            //            log.warn("SQLException at section insert()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void update(Section section) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_SECTION_QUERY);
+        executeQuery(UPDATE_SECTION_QUERY, preparedStatement -> {
             preparedStatement.setString(1, section.getName());
             preparedStatement.setInt(2, section.getId());
-
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at section update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void delete(int id) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_SECTION_QUERY);
+        executeQuery(DELETE_SECTION_QUERY, preparedStatement -> {
             preparedStatement.setInt(1, id);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at section delete()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-
-        }
+        });
     }
-
 
     public Section findById(int id) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Section section = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_SECTION_BY_ID);
-            preparedStatement.setInt(1, id);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                section = fillInSection(resultSet);
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at section findById()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return section;
+        return executeQuery(FIND_SECTION_BY_ID,
+                preparedStatement -> preparedStatement.setInt(1, id),
+                this::getSectionFromRs);
     }
+
 
     public List<Section> findAll(int offset) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Section section = null;
-        List<Section> sectionList = new ArrayList<Section>();
-
-        try {
-
-            connection = getConnection();
-            if (offset < 0) {
-                // ADD move to constant 0
-                preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
-                preparedStatement.setInt(1, offset);
-            } else {
-                preparedStatement = connection.prepareStatement(FIND_ALL);
-            }
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-
-                section = fillInSection(resultSet);
-                if (section != null) {
-                    sectionList.add(section);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at section findAll()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return sectionList;
+        return executeQuery(FIND_ALL_PAGINATE,
+                preparedStatement -> preparedStatement.setInt(1, offset),
+                this::getSectionsFromRs);
     }
 
 
-    private Section fillInSection(ResultSet resultSet) {
+    public List<Section> findAll() {
+        return executeQuery(FIND_ALL, this::getSectionsFromRs);
+    }
+
+    private Section processRs(ResultSet resultSet) throws SQLException {
         Section section = null;
-        try {
-            int id = resultSet.getInt(SECTION_ID);
-            String name = resultSet.getString(SECTION_NAME);
-            section = new Section(name);
-            section.setId(id);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        int id = resultSet.getInt(SECTION_ID);
+        String name = resultSet.getString(SECTION_NAME);
+        section = new Section(name);
+        section.setId(id);
+        return section;
+    }
+
+    public Section getSectionFromRs(ResultSet resultSet) throws SQLException {
+        Section section = null;
+        while (resultSet.next()) {
+            section = processRs(resultSet);
         }
         return section;
     }
 
-
-    public List<Section> findByNamepart(String namepart) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List<Section> sections = new ArrayList<Section>();
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_BY_NAMEPART);
-            preparedStatement.setString(1, namepart);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                Section section = fillInSection(resultSet);
-                if (section != null) {
-                    sections.add(section);
-                }
+    public List<Section> getSectionsFromRs(ResultSet resultSet) throws SQLException {
+        List<Section> keyWordList = new ArrayList<>();
+        Section section = null;
+        while (resultSet.next()) {
+            section = processRs(resultSet);
+            if (section != null) {
+                keyWordList.add(section);
             }
-        } catch (SQLException e) {
-//            log.warn("SQLException at author findAuthorsByBookId()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
         }
-        return sections;
+        return keyWordList;
     }
+
 }

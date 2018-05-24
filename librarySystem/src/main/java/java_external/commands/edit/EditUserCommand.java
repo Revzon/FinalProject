@@ -10,18 +10,15 @@ import java_external.services.manager.ConfigurationManager;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
 
-
-
-
 public class EditUserCommand implements Command {
 
+    private final static String ATTR_NAME_ID = "id";
+    private final static String ATTR_NAME_USER = "user";
     @Override
     public String execute(HttpServletRequest request) {
-        String page = "";
-
         if (UserAuthService.getInstance().checkRightsToEditPersonalPage(request)) {
-            User currentUser = (User) request.getSession().getAttribute("user");
-            int userId = Integer.parseInt(request.getParameter("id"));
+            User currentUser = (User) request.getSession().getAttribute(ATTR_NAME_USER);
+            int userId = Integer.parseInt(request.getParameter(ATTR_NAME_ID));
             User userToEdit;
 
             if ((currentUser.getId() == userId)) {
@@ -30,7 +27,7 @@ public class EditUserCommand implements Command {
                 UserDAO userDAO = UserDAO.getInstance();
                 userToEdit = userDAO.findById(userId);
             }
-            request.setAttribute("user", userToEdit);
+            request.setAttribute(ATTR_NAME_USER, userToEdit);
             return ConfigurationManager.getInstance().getProperty(
                             ConfigurationManager.EDIT_USER_DATA_PAGE_PATH);
 

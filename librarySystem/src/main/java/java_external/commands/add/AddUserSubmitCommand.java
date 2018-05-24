@@ -24,8 +24,6 @@ public class AddUserSubmitCommand implements Command {
             request.getSession().setAttribute("user", user);
             page = ConfigurationManager.getInstance().getProperty(
                     ConfigurationManager.SEARCH_PAGE_PATH);
-//            request.setAttribute(ATTR_NAME_ERROR_MESSAGE,
-//                    null);
 
         } else {
 

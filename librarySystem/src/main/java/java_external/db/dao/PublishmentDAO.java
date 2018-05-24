@@ -1,5 +1,7 @@
 package java_external.db.dao;
 
+import java_external.db.dao.base.CRUD;
+import java_external.db.dao.base.QueryManager;
 import java_external.db.dto.Publishment;
 import java_external.exceptions.DAOException;
 
@@ -8,9 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
-
+import static java_external.db.dao.base.QueryManager.executeQuery;
 
 
 public class PublishmentDAO extends AbstractDAO implements CRUD<Publishment> {
@@ -22,9 +23,6 @@ public class PublishmentDAO extends AbstractDAO implements CRUD<Publishment> {
     private static final String FIND_ALL = "SELECT * FROM publishment";
     private static final String FIND_ALL_PAGINATE = "SELECT * FROM publishment LIMIT 10 OFFSET ?";
     private static final String GET_COUNT = "SELECT COUNT(id) as count FROM publishment";
-
-
-    private static final String FIND_BY_NAMEPART = "SELECT * FROM publishment WHERE name LIKE ?";
 
     private final static String PUBLISHMENT_ID = "id";
     private final static String PUBLISHMENT_NAME = "name";
@@ -40,167 +38,74 @@ public class PublishmentDAO extends AbstractDAO implements CRUD<Publishment> {
     }
 
     public int getCount() {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(GET_COUNT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return getCountFromRS(resultSet);
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        return executeQuery(GET_COUNT, this::getCountFromRS);
     }
 
     public void insert(Publishment publishment) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_PUBLISHMENT_QUERY);
+        executeQuery(ADD_PUBLISHMENT_QUERY, preparedStatement -> {
             preparedStatement.setString(1, publishment.getName());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void update(Publishment publishment) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_PUBLISHMENT_QUERY);
+        executeQuery(UPDATE_PUBLISHMENT_QUERY, preparedStatement -> {
             preparedStatement.setString(1, publishment.getName());
             preparedStatement.setInt(2, publishment.getId());
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void delete(int id) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_PUBLISHMENT_QUERY);
+        executeQuery(DELETE_PUBLISHMENT_QUERY, preparedStatement -> {
             preparedStatement.setInt(1, id);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-
-        }
+        });
     }
 
     public Publishment findById(int id) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Publishment publishment = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_PUBLISHMENT_BY_ID);
-            preparedStatement.setInt(1, id);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                publishment = fillInPublishment(resultSet);
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return publishment;
+        return executeQuery(FIND_PUBLISHMENT_BY_ID,
+                preparedStatement -> preparedStatement.setInt(1, id),
+                this::getPublishmentFromRs);
     }
 
+
     public List<Publishment> findAll(int offset) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List<Publishment> publishmentList = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
-            preparedStatement.setInt(1, offset);
-            resultSet = preparedStatement.executeQuery();
-            publishmentList = new ArrayList<Publishment>();
-            while (resultSet.next()) {
-
-                Publishment publishment = fillInPublishment(resultSet);
-                if (publishment != null) {
-                    publishmentList.add(publishment);
-                }
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return publishmentList;
+        return executeQuery(FIND_ALL_PAGINATE,
+                preparedStatement -> preparedStatement.setInt(1, offset),
+                this::getPublishmentsFromRs);
     }
 
 
     public List<Publishment> findAll() {
-        Function<ResultSet, List<Publishment>> rsFunction = resultSet -> {
-            try {
-                List<Publishment> publishmentList = new ArrayList<>();
-                while (resultSet.next()) {
-                    Publishment publishment = fillInPublishment(resultSet);
-                    if (publishment != null) {
-                        publishmentList.add(publishment);
-                    }
-                }
-                return publishmentList;
-            } catch (SQLException e) {
-                throw new DAOException(e);
-            }
-        };
-        return QueryManager.executeQuery(rsFunction, FIND_ALL);
+        return executeQuery(FIND_ALL, this::getPublishmentsFromRs);
     }
 
-
-    public List<Publishment> findByNamepart(String namepart) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List<Publishment> publishments = new ArrayList<Publishment>();
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_BY_NAMEPART);
-            preparedStatement.setString(1, namepart);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                Publishment publishment = fillInPublishment(resultSet);
-                if (publishment != null) {
-                    publishments.add(publishment);
-                }
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return publishments;
-    }
-
-
-    private Publishment fillInPublishment(ResultSet resultSet) {
+    private Publishment processRs(ResultSet resultSet) throws SQLException {
         Publishment publishment = null;
-        try {
-            int id = resultSet.getInt(PUBLISHMENT_ID);
-            String name = resultSet.getString(PUBLISHMENT_NAME);
-            publishment = new Publishment(name);
-            publishment.setId(id);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        int id = resultSet.getInt(PUBLISHMENT_ID);
+        String name = resultSet.getString(PUBLISHMENT_NAME);
+        publishment = new Publishment(name);
+        publishment.setId(id);
+        return publishment;
+    }
+
+    public Publishment getPublishmentFromRs(ResultSet resultSet) throws SQLException {
+        Publishment publishment = null;
+        while (resultSet.next()) {
+            publishment = processRs(resultSet);
         }
         return publishment;
     }
 
+    public List<Publishment> getPublishmentsFromRs(ResultSet resultSet) throws SQLException {
+        List<Publishment> keyWordList = new ArrayList<>();
+        Publishment publishment = null;
+        while (resultSet.next()) {
+            publishment = processRs(resultSet);
+            if (publishment != null) {
+                keyWordList.add(publishment);
+            }
+        }
+        return keyWordList;
+    }
 
 }

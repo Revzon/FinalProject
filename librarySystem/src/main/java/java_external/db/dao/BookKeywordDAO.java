@@ -1,12 +1,9 @@
 package java_external.db.dao;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java_external.db.dao.base.QueryManager;
 
 
-
-
-public class BookKeywordDAO extends AbstractDAO{
+public class BookKeywordDAO extends AbstractDAO {
 
     private static final String ADD_BOOK_KEYWORD = "INSERT INTO book_keyword(book_id, keyword_id) VALUES(?, ?)";
     private static final String DELETE_BOOK_KEYWORD = "DELETE FROM book_keyword WHERE book_id = ? AND keyword_id = ?";
@@ -24,36 +21,18 @@ public class BookKeywordDAO extends AbstractDAO{
 
 
     public void insert(int bookId, int keywordId) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_BOOK_KEYWORD);
+        QueryManager.executeQuery(ADD_BOOK_KEYWORD, preparedStatement -> {
             preparedStatement.setInt(1, bookId);
             preparedStatement.setInt(2, keywordId);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book_keyword insert()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        };
+        });
     }
 
     public void delete(int bookId, int keywordId) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_BOOK_KEYWORD);
+        QueryManager.executeQuery(DELETE_BOOK_KEYWORD, preparedStatement -> {
             preparedStatement.setInt(1, bookId);
             preparedStatement.setInt(2, keywordId);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at book_keyword delete()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
-        ;
+        });
+
     }
 
 }

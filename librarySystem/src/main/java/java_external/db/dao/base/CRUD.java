@@ -1,4 +1,4 @@
-package java_external.db.dao;
+package java_external.db.dao.base;
 
 import java.util.List;
 

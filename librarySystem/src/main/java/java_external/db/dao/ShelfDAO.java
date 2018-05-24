@@ -1,5 +1,8 @@
 package java_external.db.dao;
 
+import java_external.db.dao.base.CRUD;
+import java_external.db.dao.base.FunctionRT;
+import java_external.db.dao.base.QueryManager;
 import java_external.db.dto.Section;
 import java_external.db.dto.Shelf;
 import java_external.exceptions.DAOException;
@@ -11,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-
+import static java_external.db.dao.base.QueryManager.executeQuery;
 
 
 public class ShelfDAO extends AbstractDAO implements CRUD<Shelf> {
@@ -22,10 +25,7 @@ public class ShelfDAO extends AbstractDAO implements CRUD<Shelf> {
     private static final String FIND_SHELF_BY_ID = "SELECT * FROM shelf WHERE id = ?";
     private static final String FIND_ALL = "SELECT * FROM shelf";
     private static final String FIND_ALL_PAGINATE = "SELECT * FROM shelf LIMIT 10 OFFSET ?";
-    private static final String FIND_ALL_BY_SECTION_ID = "SELECT * FROM shelf WHERE section_id = ?";
-    private static final String FIND_BY_NAMEPART = "SELECT * FROM shelf WHERE name LIKE ?";
     private static final String GET_COUNT = "SELECT COUNT(id) as count FROM shelf";
-
 
     private final static String SHELF_ID = "id";
     private final static String SHELF_NAME = "name";
@@ -41,194 +41,68 @@ public class ShelfDAO extends AbstractDAO implements CRUD<Shelf> {
     }
 
     public int getCount() {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(GET_COUNT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return getCountFromRS(resultSet);
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        return executeQuery(GET_COUNT, this::getCountFromRS);
     }
 
     public void insert(Shelf shelf) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_SHELF_QUERY);
+        executeQuery(ADD_SHELF_QUERY, preparedStatement -> {
             preparedStatement.setString(1, shelf.getName());
             preparedStatement.setInt(2, shelf.getSection().getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            //            log.warn("SQLException at shelf insert()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void update(Shelf shelf) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_SHELF_QUERY);
+        executeQuery(UPDATE_SHELF_QUERY, preparedStatement -> {
             preparedStatement.setString(1, shelf.getName());
             preparedStatement.setInt(2, shelf.getSection().getId());
             preparedStatement.setInt(3, shelf.getId());
-
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at shelf update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
 
     public void delete(int id) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_SHELF_QUERY);
+        executeQuery(DELETE_SHELF_QUERY, preparedStatement -> {
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at shelf delete()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-
-        }
+        });
     }
 
     public Shelf findById(int id) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Shelf shelf = null;
-
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_SHELF_BY_ID);
-            preparedStatement.setInt(1, id);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                shelf = processRs(resultSet);
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at shelf findById()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return shelf;
+        return executeQuery(
+                FIND_SHELF_BY_ID,
+                preparedStatement -> preparedStatement.setInt(1, id),
+                getShelfHandler());
     }
 
     public List<Shelf> findAll(int offset) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Shelf shelf = null;
-        List<Shelf> shelfList = new ArrayList<Shelf>();
-
-        try {
-
-            connection = getConnection();
-            if (offset < 0) {
-                // ADD move to constant 0
-                preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
-                preparedStatement.setInt(1, offset);
-            } else {
-                preparedStatement = connection.prepareStatement(FIND_ALL);
-            }
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-
-                shelf = processRs(resultSet);
-                if (shelf != null) {
-                    shelfList.add(shelf);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at shelf findAll()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return shelfList;
+        return executeQuery(FIND_ALL_PAGINATE, preparedStatement -> preparedStatement.setInt(1, offset),
+                getShelfResultSetHandler());
     }
 
     public List<Shelf> findAll() {
-        Function<ResultSet, List<Shelf>> shelResultSetHandler = (resultSet -> {
-            try {
-                List<Shelf> shelfList = new ArrayList<Shelf>();
-                while (resultSet.next()) {
-                    Shelf shelf = processRs(resultSet);
-                    if (shelf != null) {
-                        shelfList.add(shelf);
-                    }
-                }
-                return shelfList;
-            } catch (SQLException e) {
-                throw new DAOException(e);
-            }
-        });
-        return QueryManager.executeQuery(shelResultSetHandler, FIND_ALL);
+        return executeQuery(FIND_ALL, getShelfResultSetHandler());
     }
 
+    private FunctionRT<ResultSet, Shelf> getShelfHandler() {
+        return (resultSet) -> {
+            if (resultSet.next()) {
+                return processRs(resultSet);
+            }
+            return null;
+        };
+    }
 
-    public List<Shelf> findAllBySectionId(int sectionId) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        Shelf shelf = null;
-        List<Shelf> shelfList = new ArrayList<Shelf>();
-
-        try {
-            connection = getConnection();
-
-            preparedStatement = connection.prepareStatement(FIND_ALL_BY_SECTION_ID);
-            preparedStatement.setInt(1, sectionId);
-            resultSet = preparedStatement.executeQuery();
-
+     private FunctionRT<ResultSet, List<Shelf>> getShelfResultSetHandler() {
+        return (resultSet) -> {
+            List<Shelf> shelfList = new ArrayList<>();
             while (resultSet.next()) {
-
-                shelf = processRs(resultSet);
+                Shelf shelf = processRs(resultSet);
                 if (shelf != null) {
                     shelfList.add(shelf);
                 }
             }
-        } catch (SQLException e) {
-//            log.warn("SQLException at shelf findAll()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return shelfList;
+            return shelfList;
+        };
     }
-
-    public List<Shelf> findByNamepart(String namepart) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        List<Shelf> shelfs = new ArrayList<Shelf>();
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_BY_NAMEPART);
-            preparedStatement.setString(1, namepart);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                Shelf shelf = processRs(resultSet);
-                if (shelf != null) {
-                    shelfs.add(shelf);
-                }
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at author findAuthorsByBookId()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return shelfs;
-    }
-
 
     private Shelf processRs(ResultSet resultSet) {
         Shelf shelf = null;
@@ -250,6 +124,5 @@ public class ShelfDAO extends AbstractDAO implements CRUD<Shelf> {
         Section section = sectionDAO.findById(sectionId);
         return section;
     }
-
 
 }

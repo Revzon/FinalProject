@@ -2,6 +2,7 @@ package java_external.commands.manager;
 
 import java_external.commands.*;
 import java_external.commands.add.*;
+import java_external.commands.auth.LoginSubmitCommand;
 import java_external.commands.delete.*;
 import java_external.commands.book_operations.*;
 import java_external.commands.edit.*;

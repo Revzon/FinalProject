@@ -103,10 +103,7 @@ public class User implements Serializable {
             return false;
         if (getLogin() != null ? !getLogin().equals(user.getLogin()) : user.getLogin() != null) return false;
         if (getEmail() != null ? !getEmail().equals(user.getEmail()) : user.getEmail() != null) return false;
-        if (getPhone() != null ? !getPhone().equals(user.getPhone()) : user.getPhone() != null) return false;
-        if (getPassword() != null ? !getPassword().equals(user.getPassword()) : user.getPassword() != null)
-            return false;
-        return getRole() == user.getRole();
+        return !(getPhone() != null ? !getPhone().equals(user.getPhone()) : user.getPhone() != null);
     }
 
     @Override
@@ -117,8 +114,6 @@ public class User implements Serializable {
         result = 31 * result + (getLogin() != null ? getLogin().hashCode() : 0);
         result = 31 * result + (getEmail() != null ? getEmail().hashCode() : 0);
         result = 31 * result + (getPhone() != null ? getPhone().hashCode() : 0);
-        result = 31 * result + (getPassword() != null ? getPassword().hashCode() : 0);
-        result = 31 * result + (getRole() != null ? getRole().hashCode() : 0);
         return result;
     }
 }

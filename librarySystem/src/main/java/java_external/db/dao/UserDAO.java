@@ -1,5 +1,7 @@
 package java_external.db.dao;
 
+import java_external.db.dao.base.CRUD;
+import java_external.db.dao.base.FunctionRT;
 import java_external.db.dto.User;
 import java_external.enums.Role;
 import java_external.exceptions.DAOException;
@@ -10,12 +12,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java_external.db.dao.base.QueryManager.executeQuery;
+
 
 public class UserDAO extends AbstractDAO implements CRUD<User> {
 
     private static final String ADD_USER_QUERY = "INSERT INTO user(first_name, second_name, patronymic_name, login, email, phone, " +
             "password, role_id) VALUES(?, ?, ?, ?, ?, ?, ?, 1)";
-    private static final String UPDATE_USER_ALL_DATA_QUERY = "UPDATE user SET first_name = ?, second_name = ?, patronymic_name = ?, " +
+    private static final String UPDATE_USER_QUERY = "UPDATE user SET first_name = ?, second_name = ?, patronymic_name = ?, " +
             "email =?,  phone = ?, login = ?, password = ?, role_id = ? WHERE id = ?";
     private static final String UPDATE_USER_CHANGABLE_DATA_QUERY = "UPDATE user SET first_name = ?, second_name = ?, patronymic_name = ?, " +
             "email =?,  phone = ? WHERE id = ?";
@@ -51,24 +55,11 @@ public class UserDAO extends AbstractDAO implements CRUD<User> {
     }
 
     public int getCount() {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(GET_COUNT);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return getCountFromRS(resultSet);
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        return executeQuery(GET_COUNT, this::getCountFromRS);
     }
 
     public void insert(User user) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(ADD_USER_QUERY);
+        executeQuery(ADD_USER_QUERY, preparedStatement -> {
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getSecondName());
             preparedStatement.setString(3, user.getPatronymicName());
@@ -76,34 +67,11 @@ public class UserDAO extends AbstractDAO implements CRUD<User> {
             preparedStatement.setString(5, user.getEmail());
             preparedStatement.setString(6, user.getPhone());
             preparedStatement.setString(7, user.getPassword());
-
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-//            log.warn("SQLException at session_commands insert()", e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-                if (connection != null) {
-                    cp.closeConnection(connection);
-                }
-            } catch (SQLException e) {
-//                log.warn("SQLException at session_commands insert()", e);
-            } catch (Exception e) {
-//                log.warn("Exception at session_commands insert()", e);
-            }
-
-        }
+        });
     }
 
-
     public void update(User user) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_ALL_DATA_QUERY);
+        executeQuery(UPDATE_USER_QUERY, preparedStatement -> {
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getSecondName());
             preparedStatement.setString(3, user.getPatronymicName());
@@ -113,261 +81,122 @@ public class UserDAO extends AbstractDAO implements CRUD<User> {
             preparedStatement.setString(7, user.getPassword());
             preparedStatement.setInt(8, user.getRole().getId());
             preparedStatement.setInt(9, user.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at user update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
+    }
+
+    public void updateRole(int id, int roleId) {
+        executeQuery(UPDATE_USER_ROLE_QUERY, preparedStatement -> {
+            preparedStatement.setInt(2, id);
+            preparedStatement.setInt(1, roleId);
+        });
+    }
+
+    public void updatePassword(User user) {
+
+        executeQuery(UPDATE_USER_PASSWORD_QUERY, preparedStatement -> {
+            preparedStatement.setString(1, user.getPassword());
+            preparedStatement.setInt(2, user.getId());
+        });
     }
 
     public void updateChangableData(User user) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_CHANGABLE_DATA_QUERY);
+        executeQuery(UPDATE_USER_CHANGABLE_DATA_QUERY, preparedStatement -> {
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getSecondName());
             preparedStatement.setString(3, user.getPatronymicName());
             preparedStatement.setString(4, user.getEmail());
             preparedStatement.setString(5, user.getPhone());
             preparedStatement.setInt(6, user.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at user update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
+        });
     }
-
-    public void updateRole(User user) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_ROLE_QUERY);
-            preparedStatement.setInt(1, user.getRole().getId());
-            preparedStatement.setInt(2, user.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at user updateRole()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
-    }
-
-    public void updateRole(int id, int roleId) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_ROLE_QUERY);
-            preparedStatement.setInt(2, id);
-            preparedStatement.setInt(1, roleId);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at user update()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
-    }
-
-    public void updatePassword(User user) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(UPDATE_USER_PASSWORD_QUERY);
-            preparedStatement.setString(1, user.getPassword());
-            preparedStatement.setInt(2, user.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-//            log.warn("SQLException at user updatePassword()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-        }
-    }
-
 
     public void delete(int id) {
-        PreparedStatement preparedStatement = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(DELETE_USER_QUERY);
+        executeQuery(DELETE_USER_QUERY, preparedStatement -> {
             preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-//            log.warn("SQLException at session_commands delete()", e);
-        } finally {
-            closeConnection(null, preparedStatement);
-
-        }
+        });
     }
 
     public User findById(int id) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_USER_BY_ID);
-            preparedStatement.setInt(1, id);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                user = fillInUser(resultSet);
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findById()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return user;
+        return executeQuery(
+                FIND_USER_BY_ID,
+                preparedStatement -> preparedStatement.setInt(1, id),
+                getUserHandler());
     }
 
     public User findByEmail(String email) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_USER_BY_EMAIL);
-            preparedStatement.setString(1, email);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                user = fillInUser(resultSet);
-            }
-        } catch (SQLException e) {
-//            log.warn("SQLException at book findByEmail()", e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return user;
+        return executeQuery(
+                FIND_USER_BY_EMAIL,
+                preparedStatement -> preparedStatement.setString(1, email),
+                getUserHandler());
     }
 
     public User findByPhone(String phone) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_USER_BY_PHONE);
-            preparedStatement.setString(1, phone);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                user = fillInUser(resultSet);
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
-        return user;
+        return executeQuery(
+                FIND_USER_BY_PHONE,
+                preparedStatement -> preparedStatement.setString(1, phone),
+                getUserHandler());
     }
 
     public User findByLogin(String login) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_USER_BY_LOGIN);
-            preparedStatement.setString(1, login);
-            resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                user = fillInUser(resultSet);
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return user;
+        return executeQuery(
+                FIND_USER_BY_LOGIN,
+                preparedStatement -> preparedStatement.setString(1, login),
+                getUserHandler());
     }
 
     public List<User> findAll(int offset) {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        List<User> userList = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL_PAGINATE);
-            preparedStatement.setInt(1, offset);
-            resultSet = preparedStatement.executeQuery();
-            userList = new ArrayList<User>();
-            while (resultSet.next()) {
-                user = fillInUser(resultSet);
-                if (user != null) {
-                    userList.add(user);
-                }
-            }
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-
-        }
-        return userList;
+        return executeQuery(FIND_ALL_PAGINATE, preparedStatement -> preparedStatement.setInt(1, offset), getUserResultSetHandler());
     }
 
     public List<User> findAll() {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        User user = null;
-        try {
-            connection = getConnection();
-            preparedStatement = connection.prepareStatement(FIND_ALL);
-            resultSet = preparedStatement.executeQuery();
-            List<User> userList = new ArrayList<User>();
+        return executeQuery(FIND_ALL, getUserResultSetHandler());
+    }
+
+    private FunctionRT<ResultSet, List<User>> getUserResultSetHandler() {
+        return (resultSet) -> {
+            List<User> userList = new ArrayList<>();
             while (resultSet.next()) {
-                user = fillInUser(resultSet);
+                User user = processRs(resultSet);
                 if (user != null) {
                     userList.add(user);
                 }
             }
             return userList;
-        } catch (SQLException e) {
-            throw new DAOException(e);
-        } finally {
-            closeConnection(resultSet, preparedStatement);
-        }
+        };
     }
 
-    private User fillInUser(ResultSet resultSet) {
+    private FunctionRT<ResultSet, User> getUserHandler() {
+        return (resultSet) -> {
+            if (resultSet.next()) {
+                return processRs(resultSet);
+            }
+            return null;
+        };
+    }
+
+    private User processRs(ResultSet resultSet) throws SQLException {
         User user = new User();
+        int id = resultSet.getInt(USER_ID);
+        String firstName = resultSet.getString(USER_FIRST_NAME);
+        String secondName = resultSet.getString(USER_SECOND_NAME);
+        String patronymicName = resultSet.getString(USER_PATRONIMYC_NAME);
+        String login = resultSet.getString(USER_LOGIN);
+        String email = resultSet.getString(USER_EMAIL);
+        String phone = resultSet.getString(USER_PHONE);
+        String password = resultSet.getString(USER_PASSWORD);
+        Role role = Role.getRoleByd(resultSet.getInt(USER_ROLE_ID));
 
-        try {
+        user.setId(id);
+        user.setFirstName(firstName);
+        user.setSecondName(secondName);
+        user.setPatronymicName(patronymicName);
+        user.setLogin(login);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPassword(password);
+        user.setRole(role);
 
-            int id = resultSet.getInt(USER_ID);
-            String firstName = resultSet.getString(USER_FIRST_NAME);
-            String secondName = resultSet.getString(USER_SECOND_NAME);
-            String patronymicName = resultSet.getString(USER_PATRONIMYC_NAME);
-            String login = resultSet.getString(USER_LOGIN);
-            String email = resultSet.getString(USER_EMAIL);
-            String phone = resultSet.getString(USER_PHONE);
-            String password = resultSet.getString(USER_PASSWORD);
-            Role role = Role.getRoleByd(resultSet.getInt(USER_ROLE_ID));
-
-            user.setId(id);
-            user.setFirstName(firstName);
-            user.setSecondName(secondName);
-            user.setPatronymicName(patronymicName);
-            user.setLogin(login);
-            user.setEmail(email);
-            user.setPhone(phone);
-            user.setPassword(password);
-            user.setRole(role);
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
         return user;
     }
 
