@@ -3,6 +3,7 @@ package java_external.server;
 import java_external.commands.Command;
 import java_external.commands.manager.CommandManager;
 import java_external.services.manager.ConfigurationManager;
+import org.apache.log4j.Logger;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
@@ -13,7 +14,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
+
 public class BookServlet extends HttpServlet {
+
+    private static final Logger logger = Logger.getLogger(BookServlet.class);
 
     private  static CommandManager commandManager = CommandManager.getInstance();
     private String page = ConfigurationManager.getInstance().getProperty(ConfigurationManager.INDEX_PAGE_PATH);
@@ -32,16 +36,16 @@ public class BookServlet extends HttpServlet {
         Command command = commandManager.getCommand(request);
 
         String pageToOpen = command.execute(request);
+
+        logger.info(pageToOpen);
         if (!"ref".equals(pageToOpen)) {
             page = pageToOpen;
         }
         RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(page);
         try {
             dispatcher.forward(request, response);
-        } catch (ServletException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (ServletException | IOException e) {
+            logger.error(e);
         }
     }
 
