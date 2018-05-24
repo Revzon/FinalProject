@@ -48,6 +48,21 @@
         <url-pattern>/</url-pattern>
     </filter-mapping>
 
+    <filter>
+        <filter-name>setCharacterEncodingFilter</filter-name>
+        <filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+    </filter>
+
+    <!-- The mapping for the Set Character Encoding Filter -->
+    <filter-mapping>
+        <filter-name>setCharacterEncodingFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
     <jsp-config>
         <jsp-property-group>
             <url-pattern>*.jsp</url-pattern>
@@ -58,6 +73,11 @@
         <taglib>
             <taglib-uri>list-utils</taglib-uri>
             <taglib-location>/WEB-INF/tlds/list-utils.tld</taglib-location>
+        </taglib>
+
+        <taglib>
+            <taglib-uri>i18n</taglib-uri>
+            <taglib-location>/WEB-INF/tlds/i18n.tld</taglib-location>
         </taglib>
     </jsp-config>
 
